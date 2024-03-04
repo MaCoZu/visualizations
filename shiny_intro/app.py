@@ -1,30 +1,40 @@
-from shiny import reactive
+from functools import partial
+
+import plotly.express as px
 from shiny.express import input, render, ui
-
-ui.page_opts(title="Statistics")
-
-with ui.sidebar(open="closed", bg="#f8f8f8"): 
-    TOPICS = {"topic": ["education", "jobs", "industry"]}
-    ui.input_selectize("x", None, choices=TOPICS["topic"])
-    ui.input_selectize("refinement1", None, choices=["Option1", "Option2"])
-    ui.input_selectize("refinement2", None, choices=["OptionA", "OptionB", "OptionC"])
+from shiny.ui import page_navbar
+from shinywidgets import render_widget
 
 
-    @reactive.effect
-    def _():
-        choices = "upper" if input.uppercase() else "lower"
-        ui.update_selectize("x", choices=CHOICES[choices])
+
+ui.page_opts(title="Sidebar layout", fillable=True)
+
+with ui.sidebar(open="open", bg="#f8f8f8"):
+
+    with ui.accordion(id="acc", open="Section A"):
+        with ui.accordion_panel("work"):
+            ui.input_select("var", "Select variable", choices=["total_bill", "tip"])
+
+        with ui.accordion_panel("households"):
+            "Section B content"
+
+        with ui.accordion_panel("state"):
+            "Section C content"
+
+        with ui.accordion_panel("industry"):
+            "Section D content"
+
+        with ui.accordion_panel("nature"):
+            "Section E content"
 
 
-"Stats"
-with ui.main(): 
-    # Placeholder for statistical chart
-    ui.plotly_chart(None)
+@render_widget
+def hist():
+    fig = px.histogram(
+        px.data.tips(),
+        input.var(),
+        color_discrete_sequence=["pink"],  # Set the color of the histogram bars
+        template="simple_white",  # Set the background
+    )
 
-    # Placeholder for general stats boxes
-    ui.div("Stat1", style="border: 1px solid black; padding: 10px; margin-bottom: 10px;")
-    ui.div("Stat2", style="border: 1px solid black; padding: 10px; margin-bottom: 10px;")
-    ui.div("Stat3", style="border: 1px solid black; padding: 10px; margin-bottom: 10px;")
-
-    # Placeholder for table view
-    ui.div("Table View", style="border: 1px solid black; padding: 10px; margin-bottom: 10px;")
+    return fig
