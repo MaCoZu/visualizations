@@ -1,3 +1,0 @@
-shiny 
-shinywidgets
-pandas ipykernel
