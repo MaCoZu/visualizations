@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="d3.v7.js"></script>
+    <title>Multidimensional Scatterplot</title>
+</head>
+
+<body>
+    <div>
+        <label for="year-select">Select Year: </label>
+        <select id="year-buttons"></select>
+        <div class="canva"></div>
+    </div>
+    <div class="scatterplot"></div>
+
+    <script>
+        // Declare the chart dimensions and margins.
+        const width = 850;
+        const height = 600;
+        const marginTop = 30;
+        const marginRight = 30;
+        const marginBottom = 90;
+        const marginLeft = 90;
+
+        const canvas = d3.select('.canva');
+
+        // CAMVAS
+        const svg = canvas
+            .append("svg")
+            .attr("width", width + marginLeft + marginRight)
+            .attr("height", height + marginTop + marginBottom)
+            .style("border", "1px #00c")
+            .style("background-color", "white")
+
+        // chart area with borders
+        const g = svg.append("g")
+            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+        //  add a rectange inside the chart area 
+        g.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .style("fill", "#EEE");
+
+        // DATA
+        d3.csv("../../data/happy_gni.csv").then(data => {
+            // Parse data
+            data.forEach(d => {
+                d.Country = +d.Country;
+                d.Year = +d.Year;
+                d.HALE = +d.HALE;
+                d['CO₂ pc'] = +d['CO₂ pc'];
+                d['Happy Score'] = +d['Happy Score'];
+                d['GNI pc PPP$'] = +d['GNI pc PPP$'];
+            });
+
+            // BUTTONS 
+            // const years = d3.groups(data, (d) => d.Year);
+
+            // const buttons = d3
+            //     .select(div)
+            //     .selectAll("button")
+            //     .data(years)
+            //     .join("button");
+
+            // buttons.text((d) => d[0]);
+
+            // SCALER
+            const gni = d3.scaleLinear()
+                .domain(d3.extent(data, d => d['GNI pc PPP$']))
+                .range([5, 40]);
+
+            const happy = d3.scaleLinear()
+                .domain(d3.extent(data, d => d['Happy Score']))
+                .range([0, width]);
+
+
+            const co2 = d3.scaleLinear()
+                .domain(d3.extent(data, d => d['CO₂ pc']))
+                .range([height, 0]);
+
+
+            function createColorScale(data) {
+                return d3.scaleSequential()
+                    .domain(d3.extent(data, d => d.HALE))
+                    .interpolator(d3.interpolateGreens);
+            }
+
+            const color = createColorScale(data);
+
+            // x-axis 
+            g.append("g")
+                // move x-axis from top to bottom
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(happy).ticks(10, ",f").tickSize(7).tickPadding(15) )
+                .attr("font-family", "sans-serif")
+                .attr("font-size", "14px")
+                .attr("color", "#3f3d3d");
+
+            // x-axis title
+            g.append("text")
+                .attr("x", width / 2)
+                .attr("y", height + 60)
+                .attr("fill", "#3f3d3d")
+                .attr("font-size", "18px")
+                .attr("font-family", "sans-serif")
+                .style("text-anchor", "middle")
+                .text("Happiness Score");
+
+            // y-axis 
+            g.append("g")
+                .call(d3.axisLeft(co2).ticks(10, ",f").tickSize(7).tickPadding(10))
+                .attr("font-family", "sans-serif")
+                .attr("font-size", "14px")
+                .attr("color", "#3f3d3d");
+
+            g.append("text")
+                .attr("transform", `translate(${-60}, ${height / 2}) rotate(-90)`)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#3f3d3d")
+                .attr("font-size", "18px")
+                .attr("font-family", "sans-serif")
+                .text("CO₂ per capita");
+
+
+            // LEGEND
+            const legendValues = [1000, 25000, 50000, 75000, 150000];
+            const xCircle = 170
+            const xLabel = 230
+            const yCircle = 180
+
+            svg.selectAll("legend")
+                .data(legendValues)
+                .join("circle")
+                .attr("cx", xCircle)
+                .attr("cy", d => yCircle - gni(d))
+                .attr("r", d => gni(d))
+                .style("fill", "none")
+                .attr("stroke", "#3f3d3d")
+
+            // Add legend: labels
+            svg.selectAll("legend")
+                .data(legendValues)
+                .join("text")
+                .attr('x', xLabel)
+                .attr('y', (d,i) => yCircle - gni(d)-i*8)
+                .text(d => d)
+                .attr("fill", "#3f3d3d")
+                .attr("font-size", "13px")
+                .attr("font-family", "sans-serif")
+                .attr('alignment-baseline', 'middle')
+
+            // Color Legend
+            Legend(d3.scaleSequential([0, 10], d3.interpolateGreens), {
+                title: "HALE"
+                })
+
+            // TOOLTIP 
+            // -1- Create a tooltip div that is hidden by default:
+            var tooltip = d3.select(".canva")
+                .append("g")
+                .style("opacity", 0)
+                .attr("class", "tooltip")
+                .style("background-color", "darkgray")
+                .style("border-radius", "5px")
+                .style("padding", "10px")
+                .style("color", "black")
+
+            // -2- Create 3 functions to show / update (when mouse move but stay on same circle) / hide the tooltip
+            var showTooltip = function (d) {
+                tooltip
+                    .transition()
+                    .duration(200)
+                tooltip
+                    .style("opacity", 1)
+                    .html("Country: " + d.country)
+                    .style("left", (event.x) / 2 + "px")
+                    .style("top", (event.y) / 2 + 30 + "px")
+            }
+            const moveTooltip = function (event, d) {
+                tooltip
+                    .style("left", (event.x) / 2 + "px")
+                    .style("top", (event.y) / 2 + 30 + "px")
+            }
+            const hideTooltip = function (event, d) {
+                tooltip
+                    .transition()
+                    .duration(200)
+                    .style("opacity", 0)
+            }
+
+            // CIRCLES 
+            const circles = g
+                .selectAll("circle")
+                .data(data.filter((d) => d.Year == "2015"))
+                .join("circle")
+                .attr("r", (d) => gni(d['GNI pc PPP$']))
+                .style("stroke", "lightgrey")
+                .attr("cx", (d) => happy(d['Happy Score']))
+                .attr("cy", (d) => co2(d['CO₂ pc']))
+                .style("fill", (d) => color(d.HALE))
+                // -3- Trigger the functions
+                .on("mouseover", showTooltip)
+                .on("mousemove", moveTooltip)
+                .on("mouseleave", hideTooltip)
+
+            console.log(d3.extent(data, d => d.HALE));
+
+        }).catch(error => console.error("Error loading the data:", error));
+    </script>
+</body>
