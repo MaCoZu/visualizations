@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schelling's Segregation Model</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body class="font-roboto flex flex-col min-h-fit content-center items-center bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-200">
+    <h1>Schelling's Segregation Model</h1>
+    <div class="controls">
+        <div class="input-wrapper" style="padding-bottom: 15px; font-size: large;">
+            <label class="font-semibold" for="threshold">Preference Threshold:</label>
+            <input type="number" id="threshold" value="30" min="0" max="100">
+            <span class="percent-sign">%</span>
+        </div>
+        <div class="flex my-2 justify-around">
+            <button class="btn" onclick="runModel()">Run Model</button>
+            <button class="btn" onclick="resetGrid()">Reset</button>
+        </div>
+    </div>
+    <div id="visualization"></div>
+    <div class="metrics">
+        <!-- <div id="happiness-index">Happiness Index: <span id="happiness-value">0</span>%</div>
+        <div id="dissimilarity-index">Dissimilarity Index: <span id="dissimilarity-value">0</span></div> -->
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

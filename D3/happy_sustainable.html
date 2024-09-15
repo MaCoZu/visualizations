@@ -6,40 +6,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="d3.v7.js"></script>
     <title>Multidimensional Scatterplot</title>
+    <style>
+        #heading {
+            justify-content: center;
+            align-items: center;
+            position: relative;
+
+        }
+        .tooltip {
+            font-family: 'Literata', sans-serif;
+            /* Change this to your desired font */
+            font-size: 12px;
+            /* Adjust font size for a more compact look */
+            font-weight: normal;
+            /* Set the font weight */
+            position: absolute;
+            padding: 10px;
+            text-align: left;
+            /* padding: 10px; */
+            background: rgba(255, 255, 255, 0.9);
+            /* Background color with slight transparency */
+            border: 0.5px solid #ccc;
+            /* Optional border for better visibility */
+            border-radius: 5px;
+            /* Rounded corners */
+            pointer-events: none;
+            /* Ensure the tooltip doesn't interfere with mouse events */
+            opacity: 0;
+            /* Initially hidden */
+            transition: opacity 0.2s;
+            /* Smooth fading effect */
+        }
+
+
+        .tooltip td {
+            padding: 1.7px 5px;
+            /* Reduce padding to minimize vertical space */
+        }
+
+
+        text {
+            font-family: 'Literata', sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            /* font-stretch: 200%; */
+            fill: rgb(92, 91, 91);
+        }
+
+        button {
+            background-color: #FFFFFF;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: .25rem;
+            box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
+            padding: 4px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            align-items: center;
+            box-sizing: border-box;
+            color: rgba(0, 0, 0, 0.85);
+            cursor: pointer;
+            display: inline-flex;
+            justify-content: center;
+            line-height: 1.25;
+            margin: 0;
+            min-height: 3rem;
+            position: relative;
+            text-decoration: none;
+            transition: all 250ms;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            vertical-align: baseline;
+            width: auto;
+        }
+
+        button:hover,
+        button:focus {
+        border-color: rgba(0, 0, 0, 0.15);
+        box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+        color: rgba(0, 0, 0, 0.65);
+        }
+
+        button:hover {
+        transform: translateY(-1px);
+        }
+
+        button:active {
+        background-color: #F0F0F1;
+        border-color: rgba(0, 0, 0, 0.15);
+        box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
+        color: rgba(0, 0, 0, 0.65);
+        transform: translateY(0);
+        }
+    </style>
 </head>
 
 <body>
     <div>
-        <label for="year-select">Select Year: </label>
-        <select id="year-buttons"></select>
+        <h1 id="heading" style="font-family: Arial, Helvetica, sans-serif;">Happy & Sustainable?</h1>
         <div class="canva"></div>
     </div>
+    
     <div class="scatterplot"></div>
 
     <script>
         // Declare the chart dimensions and margins.
-        const width = 850;
-        const height = 600;
-        const marginTop = 30;
+        const width = 800;
+        const height = 400;
+        const marginTop = 50;
         const marginRight = 30;
         const marginBottom = 90;
         const marginLeft = 90;
 
         const canvas = d3.select('.canva');
 
-        // CAMVAS
+
+        // CANVAS
         const svg = canvas
             .append("svg")
             .attr("width", width + marginLeft + marginRight)
             .attr("height", height + marginTop + marginBottom)
-            .style("border", "1px #00c")
-            .style("background-color", "white")
+            .style("background-color", "white");
 
         // chart area with borders
         const g = svg.append("g")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-        //  add a rectange inside the chart area 
+        //  add a rectangle inside the chart area 
         g.append("rect")
             .attr("width", width)
             .attr("height", height)
@@ -49,7 +142,7 @@
         d3.csv("../../data/happy_gni.csv").then(data => {
             // Parse data
             data.forEach(d => {
-                d.Country = +d.Country;
+                d.Country = d.Country;
                 d.Year = +d.Year;
                 d.HALE = +d.HALE;
                 d['CO₂ pc'] = +d['CO₂ pc'];
@@ -57,17 +150,7 @@
                 d['GNI pc PPP$'] = +d['GNI pc PPP$'];
             });
 
-            // BUTTONS 
-            // const years = d3.groups(data, (d) => d.Year);
-
-            // const buttons = d3
-            //     .select(div)
-            //     .selectAll("button")
-            //     .data(years)
-            //     .join("button");
-
-            // buttons.text((d) => d[0]);
-
+            
             // SCALER
             const gni = d3.scaleLinear()
                 .domain(d3.extent(data, d => d['GNI pc PPP$']))
@@ -77,11 +160,9 @@
                 .domain(d3.extent(data, d => d['Happy Score']))
                 .range([0, width]);
 
-
             const co2 = d3.scaleLinear()
                 .domain(d3.extent(data, d => d['CO₂ pc']))
                 .range([height, 0]);
-
 
             function createColorScale(data) {
                 return d3.scaleSequential()
@@ -93,9 +174,8 @@
 
             // x-axis 
             g.append("g")
-                // move x-axis from top to bottom
                 .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(happy).ticks(10, ",f").tickSize(7).tickPadding(15) )
+                .call(d3.axisBottom(happy).ticks(10, ",f").tickSize(7).tickPadding(15))
                 .attr("font-family", "sans-serif")
                 .attr("font-size", "14px")
                 .attr("color", "#3f3d3d");
@@ -104,8 +184,8 @@
             g.append("text")
                 .attr("x", width / 2)
                 .attr("y", height + 60)
-                .attr("fill", "#3f3d3d")
-                .attr("font-size", "18px")
+                // .attr("fill", "#3f3d3d")
+                .style("font-size", "20px")
                 .attr("font-family", "sans-serif")
                 .style("text-anchor", "middle")
                 .text("Happiness Score");
@@ -117,98 +197,231 @@
                 .attr("font-size", "14px")
                 .attr("color", "#3f3d3d");
 
+            // y-axis title
             g.append("text")
                 .attr("transform", `translate(${-60}, ${height / 2}) rotate(-90)`)
                 .attr("text-anchor", "middle")
-                .attr("fill", "#3f3d3d")
+                // .attr("fill", "#3f3d3d")
                 .attr("font-size", "18px")
                 .attr("font-family", "sans-serif")
-                .text("CO₂ per capita");
-
+                .text("CO₂ per capita")
+                .style("font-size", "20px");
 
             // LEGEND
             const legendValues = [1000, 25000, 50000, 75000, 150000];
-            const xCircle = 170
-            const xLabel = 230
-            const yCircle = 180
+            const xCircle = 170;
+            // const xLabel = 430;
+            const yCircle = 80;
+            const legendTitle = "GNI pc PPP$";
 
-            svg.selectAll("legend")
+            const gni_legend = svg.append("g")
+                .attr("transform", `translate(${xCircle}, ${yCircle})`);
+
+            // Add legend title
+            gni_legend.append("text")
+                .attr("x", xCircle - 50)
+                .attr("y", yCircle - 100)
+                .text(legendTitle)
+                .style("font-size", "18px")
+                .attr("font-weight", "bold")
+                .attr("font-stretch", "condensed")
+                .attr("font-family", "sans-serif")
+                .attr("fill", "#3f3d3d");
+
+            gni_legend.selectAll("legend-circle")
                 .data(legendValues)
                 .join("circle")
                 .attr("cx", xCircle)
                 .attr("cy", d => yCircle - gni(d))
                 .attr("r", d => gni(d))
                 .style("fill", "none")
-                .attr("stroke", "#3f3d3d")
+                .attr("stroke", "#3f3d3d");
 
             // Add legend: labels
             svg.selectAll("legend")
                 .data(legendValues)
                 .join("text")
-                .attr('x', xLabel)
-                .attr('y', (d,i) => yCircle - gni(d)-i*8)
+                .attr('x', (d, i) => xCircle + 220 + i * 4)
+                .attr('y', (d, i) => yCircle + 80 - i * 17)
                 .text(d => d)
                 .attr("fill", "#3f3d3d")
-                .attr("font-size", "13px")
+                // .attr("font-size", "13px")
                 .attr("font-family", "sans-serif")
-                .attr('alignment-baseline', 'middle')
+                .attr('alignment-baseline', 'middle');
 
-            // Color Legend
-            Legend(d3.scaleSequential([0, 10], d3.interpolateGreens), {
-                title: "HALE"
-                })
+            // COLOR LEGEND
+            const colorLegend = svg.append("g")
+                .attr("transform", `translate(${marginLeft + 200}, ${marginTop + height / 2.4})`);
 
-            // TOOLTIP 
-            // -1- Create a tooltip div that is hidden by default:
-            var tooltip = d3.select(".canva")
-                .append("g")
-                .style("opacity", 0)
+            const colorScale = d3.scaleSequential(d3.interpolateGreens)
+                .domain(d3.extent(data, d => d.HALE));
+
+            const legendWidth = 250;
+            const legendHeight = 20;
+
+            const legendScale = d3.scaleLinear()
+                .domain(colorScale.domain())
+                .range([0, legendWidth]);
+
+            // Modify the axis to remove end ticks
+            const legendAxis = d3.axisBottom(legendScale)
+                .ticks(5)
+                .tickSize(6)
+                .tickFormat((d, i, nodes) => {
+                    // Remove labels for the first and last ticks
+                    // if (i === 0 || i === nodes.length - 1) return null;
+                    return d3.format(".0f")(d);
+                });
+
+            // Append and style the axis
+            const axisGroup = colorLegend.append("g")
+                .attr("transform", `translate(0, ${legendHeight})`)
+                .call(legendAxis);
+
+            // Remove the domain line
+            axisGroup.select(".domain").remove();
+
+            // Style the ticks
+            axisGroup.selectAll(".tick line")
+                .attr("stroke", "none");
+
+            // // Remove first and last tick lines
+            // axisGroup.selectAll(".tick:first-of-type line, .tick:last-of-type line")
+            //     .remove();
+
+            const legendGradient = colorLegend.append("defs")
+                .append("linearGradient")
+                .attr("id", "legend-gradient")
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "100%")
+                .attr("y2", "0%");
+
+            legendGradient.selectAll("stop")
+                .data(colorScale.ticks().map((t, i, n) => ({
+                    offset: `${100 * i / (n.length - 1)}%`,
+                    color: colorScale(t)
+                })))
+                .enter().append("stop")
+                .attr("offset", d => d.offset)
+                .attr("stop-color", d => d.color);
+
+            // Draw the gradient rectangle for the legend
+            colorLegend.append("rect")
+                .attr("width", legendWidth)
+                .attr("height", legendHeight)
+                .style("fill", "url(#legend-gradient)");
+
+            // Add label for the legend
+            colorLegend.append("text")
+                .attr("transform", `translate(${legendWidth / 2}, ${legendHeight - 30})`)
+                .style("text-anchor", "middle")
+                .style("font-size", "18px")
+                .text("Healthy life expectancy (HALE)");
+
+            // TOOLTIP
+            const tooltip = d3.select("body").append("div")
                 .attr("class", "tooltip")
-                .style("background-color", "darkgray")
-                .style("border-radius", "5px")
-                .style("padding", "10px")
-                .style("color", "black")
+                .style("opacity", 0);
 
-            // -2- Create 3 functions to show / update (when mouse move but stay on same circle) / hide the tooltip
-            var showTooltip = function (d) {
-                tooltip
-                    .transition()
+            function showTooltip(event, d) {
+                tooltip.transition()
                     .duration(200)
-                tooltip
-                    .style("opacity", 1)
-                    .html("Country: " + d.country)
-                    .style("left", (event.x) / 2 + "px")
-                    .style("top", (event.y) / 2 + 30 + "px")
-            }
-            const moveTooltip = function (event, d) {
-                tooltip
-                    .style("left", (event.x) / 2 + "px")
-                    .style("top", (event.y) / 2 + 30 + "px")
-            }
-            const hideTooltip = function (event, d) {
-                tooltip
-                    .transition()
-                    .duration(200)
-                    .style("opacity", 0)
+                    .style("opacity", .9);
+
+                tooltip.html(`
+                        <table>
+                            <tr><td>Country:</td><td><strong>${d.Country}</strong></td></tr>
+                            <tr><td>Year:</td><td><strong>${d.Year}</strong></td></tr>
+                            <tr><td>Happy Score:</td><td><strong>${d['Happy Score'].toFixed(2)}</strong></td></tr>
+                            <tr><td>CO₂ pc:</td><td><strong>${d['CO₂ pc'].toFixed(2)}</strong></td></tr>
+                            <tr><td>HALE:</td><td><strong>${d.HALE.toFixed(2)}</strong></td></tr>
+                            <tr><td>GNI pc PPP$:</td><td><strong>${d['GNI pc PPP$'].toFixed(0)}</strong></td></tr>
+                        </table>
+                    `)
+                    .attr("class", "tooltip")
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
             }
 
-            // CIRCLES 
-            const circles = g
-                .selectAll("circle")
-                .data(data.filter((d) => d.Year == "2015"))
-                .join("circle")
-                .attr("r", (d) => gni(d['GNI pc PPP$']))
-                .style("stroke", "lightgrey")
-                .attr("cx", (d) => happy(d['Happy Score']))
-                .attr("cy", (d) => co2(d['CO₂ pc']))
-                .style("fill", (d) => color(d.HALE))
-                // -3- Trigger the functions
-                .on("mouseover", showTooltip)
-                .on("mousemove", moveTooltip)
-                .on("mouseleave", hideTooltip)
 
-            console.log(d3.extent(data, d => d.HALE));
+            function hideTooltip() {
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            }
+
+            function updateChart(selectedYear) {
+                const filteredData = data.filter(d => d.Year == selectedYear);
+
+                // Bind data to circles
+                const circles = g.selectAll("circle")
+                    .data(filteredData, d => d.Country); // Use 'Country' as the key for data join
+
+                // Remove old circles
+                circles.exit().transition() // Transition out exiting circles before removing
+                    .duration(1000)
+                    .attr("r", 0) // Shrink the radius to 0
+                    .remove(); // Remove old circles from the DOM
+
+                // Create new circles for entering data
+                const enteringCircles = circles.enter()
+                    .append("circle")
+                    .attr("r", 0) // Start with radius 0 for entering circles
+                    .attr("cx", d => happy(d['Happy Score'])) // Position based on new data
+                    .attr("cy", d => co2(d['CO₂ pc']))
+                    .style("fill", d => color(d.HALE))
+                    .style("stroke", "lightgrey")
+                    .on("mouseover", showTooltip)
+                    .on("mouseout", hideTooltip)
+                    .transition() // Transition the entering circles
+                    .duration(1000)
+                    .attr("r", d => gni(d['GNI pc PPP$'])); // Transition to the new radius
+
+                // Update existing circles
+                circles.merge(enteringCircles) // Merge both entering and updating selection
+                    .transition() // Transition the updated circles
+                    .duration(1000)
+                    .attr("r", d => gni(d['GNI pc PPP$'])) // Update the radius
+                    .attr("cx", d => happy(d['Happy Score'])) // Update x position
+                    .attr("cy", d => co2(d['CO₂ pc'])); // Update y position
+            }
+
+
+            // YEAR SELECTION
+            const years = [...new Set(data.map(d => d.Year))];
+
+            // Create a container for the buttons above the chart
+            const buttonContainer = canvas.append("div")
+                .attr("id", "button-container")
+                .style("display", "flex") // Align the buttons in a row
+                .style("flex-direction", "column")
+                .style("align-items", "center")
+                .style("position", "relative") // Position over the chart
+                .style("left", "200px")
+                // .style("justify-content", "end") // Center the buttons
+                .style("bottom", "600px") // Distance from top of the chart
+                // .style("width", "10px") // Full width of the chart container
+                // .style("z-index", "10"); // Make sure it's on top of the chart
+
+            // Add buttons for each year
+            buttonContainer.selectAll("button")
+                .data(years)
+                .enter()
+                .append("button")
+                .text(d => d) // Set button text to the year
+                .attr("class", "year-button")
+                .style("margin", "5px 0px") // Add some space between buttons
+                .on("click", function (event, d) {
+                    updateChart(d); // Call updateChart with the selected year
+                });
+
+
+            // Initialize with 2019 data
+            updateChart(2019);
 
         }).catch(error => console.error("Error loading the data:", error));
     </script>
 </body>
+
+</html>
