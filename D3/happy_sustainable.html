@@ -7,55 +7,22 @@
     <script src="d3.v7.js"></script>
     <title>Multidimensional Scatterplot</title>
     <style>
-        #heading {
-            justify-content: center;
-            align-items: center;
-            position: relative;
-
-        }
-        .tooltip {
-            font-family: 'Literata', sans-serif;
-            /* Change this to your desired font */
-            font-size: 12px;
-            /* Adjust font size for a more compact look */
-            font-weight: normal;
-            /* Set the font weight */
-            position: absolute;
-            padding: 10px;
-            text-align: left;
-            /* padding: 10px; */
-            background: rgba(255, 255, 255, 0.9);
-            /* Background color with slight transparency */
-            border: 0.5px solid #ccc;
-            /* Optional border for better visibility */
-            border-radius: 5px;
-            /* Rounded corners */
-            pointer-events: none;
-            /* Ensure the tooltip doesn't interfere with mouse events */
-            opacity: 0;
-            /* Initially hidden */
-            transition: opacity 0.2s;
-            /* Smooth fading effect */
+        #rect-container {
+            fill: #F0F0F1;
         }
 
-
-        .tooltip td {
-            padding: 1.7px 5px;
-            /* Reduce padding to minimize vertical space */
+        #ref-label {
+            fill: rgba(18, 100, 18, 0.867);
         }
 
-
-        text {
-            font-family: 'Literata', sans-serif;
-            font-size: 16px;
-            font-weight: 400;
-            /* font-stretch: 200%; */
-            fill: rgb(92, 91, 91);
+        #ref-line {
+            stroke: darkolivegreen;
+            /* Line color */
         }
 
         button {
             background-color: #FFFFFF;
-            border: 1px solid rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(158, 28, 28, 0.1);
             border-radius: .25rem;
             box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
             padding: 4px 20px;
@@ -82,61 +49,166 @@
 
         button:hover,
         button:focus {
-        border-color: rgba(0, 0, 0, 0.15);
-        box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
-        color: rgba(0, 0, 0, 0.65);
+            border-color: rgba(0, 0, 0, 0.15);
+            box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+            color: rgba(0, 0, 0, 0.65);
         }
 
         button:hover {
-        transform: translateY(-1px);
+            transform: translateY(-1px);
         }
 
         button:active {
-        background-color: #F0F0F1;
-        border-color: rgba(0, 0, 0, 0.15);
-        box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
-        color: rgba(0, 0, 0, 0.65);
-        transform: translateY(0);
+            background-color: #F0F0F1;
+            border-color: rgba(0, 0, 0, 0.15);
+            box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
+            color: rgba(0, 0, 0, 0.65);
+            transform: translateY(0);
+        }
+
+     
+
+        circle {
+            stroke: rgba(22, 22, 22, 0.386);}
+
+
+
+        @media (prefers-color-scheme: dark) {
+            body { background-color: rgb(17 24 39); color: rgb(229 231 235); }
+            #container { background-color: rgb(17 24 39); }
+            #chart-container { background-color: rgb(17 24 39); }
+            #svg-container { background-color: rgb(17 24 39); }
+            #g-container { background-color: rgb(17 24 39); }
+            #rect-container { fill: rgb(17 24 39); }
+            text { fill: #fff; }
+
+            #ref-line { stroke: lightgreen; /* Line color */ }
+            #ref-label { fill: lightgreen; }
+
+            button {
+                color: #fff;
+                background-color: rgba(76, 117, 199, 0.247);
+                border: rgba(237, 235, 245, 0.76);
+                box-shadow: rgba(199, 211, 235, 0.43) 0 1px 3px 0;
+
+            }
+
+            button:hover,
+            button:focus {
+                border-color: rgba(87, 102, 232, 0.15);
+                box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+                color: rgba(84, 136, 240, 0.886);
+            }
+
+            button:active {
+                background-color: #646496;
+                border-color: rgba(190, 157, 157, 0.15);
+                box-shadow: rgba(218, 214, 214, 0.06) 0 2px 4px;
+                color: #fff;
+            }
+
+            circle {
+                stroke: rgba(255, 255, 255, 0.671);}
+        }
+
+
+        #heading {
+            margin-top: 0;
+            margin-bottom: 10px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #chart-container {
+            display: flex;
+            align-items: flex-start;
+            margin-top: 10px;
+        }
+
+
+        .tooltip {
+            font-size: 12px;
+            font-weight: normal;
+            position: absolute;
+            padding: 10px;
+            text-align: left;
+            background: rgba(27, 20, 20, 0.9);
+            border: 0.5px solid #ccc;
+            border-radius: 5px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+
+        .tooltip td {
+            padding: 1.7px 5px;
+        }
+
+
+        text {
+            font-family: 'Literata', sans-serif;
+            font-size: 16px;
+            font-weight: 400;
         }
     </style>
 </head>
 
-<body>
-    <div>
-        <h1 id="heading" style="font-family: Arial, Helvetica, sans-serif;">Happy & Sustainable?</h1>
-        <div class="canva"></div>
+<body
+    class="flex flex-col h-fit w-fit content-center items-center bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-200">
+    <div></div>
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center;" class="canva">
     </div>
-    
-    <div class="scatterplot"></div>
+
 
     <script>
         // Declare the chart dimensions and margins.
-        const width = 800;
-        const height = 400;
-        const marginTop = 50;
+        const width = 850;
+        const height = 450;
+        const marginTop = 40;
         const marginRight = 30;
         const marginBottom = 90;
         const marginLeft = 90;
 
+        // Canvas
         const canvas = d3.select('.canva');
 
+        const container = canvas.append("div")
+            .attr("id", "container")
+            .style("display", "flex")
+            .style("flex-direction", "row");
 
-        // CANVAS
-        const svg = canvas
+        // Container to hold the heading and chart
+        const chart = container.append("div")
+            .attr("id", "chart-container")
+            .style("flex-direction", "column")
+            .style("display", "flex") // Align chart and buttons in a row
+            .style("align-items", "center"); // Align items to the top
+
+        chart.append("h1")
+            .attr("id", "heading")
+            .text("Happy & Sustainable?")
+            .style("text-align", "center");
+
+        // SVG
+        const svg = chart
+            .attr("id", "svg-container")
             .append("svg")
             .attr("width", width + marginLeft + marginRight)
-            .attr("height", height + marginTop + marginBottom)
-            .style("background-color", "white");
+            .attr("height", height + marginTop + marginBottom);
 
-        // chart area with borders
+        // Chart area with borders
         const g = svg.append("g")
+            .attr("id", "g-container")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
         //  add a rectangle inside the chart area 
         g.append("rect")
+            .attr("id", "rect-container")
             .attr("width", width)
-            .attr("height", height)
-            .style("fill", "#EEE");
+            .attr("height", height);
 
         // DATA
         d3.csv("../../data/happy_gni.csv").then(data => {
@@ -150,7 +222,7 @@
                 d['GNI pc PPP$'] = +d['GNI pc PPP$'];
             });
 
-            
+
             // SCALER
             const gni = d3.scaleLinear()
                 .domain(d3.extent(data, d => d['GNI pc PPP$']))
@@ -167,7 +239,7 @@
             function createColorScale(data) {
                 return d3.scaleSequential()
                     .domain(d3.extent(data, d => d.HALE))
-                    .interpolator(d3.interpolateGreens);
+                    .interpolator(d3.interpolateGnBu);
             }
 
             const color = createColorScale(data);
@@ -177,14 +249,12 @@
                 .attr("transform", `translate(0,${height})`)
                 .call(d3.axisBottom(happy).ticks(10, ",f").tickSize(7).tickPadding(15))
                 .attr("font-family", "sans-serif")
-                .attr("font-size", "14px")
-                .attr("color", "#3f3d3d");
+                .attr("font-size", "14px");
 
             // x-axis title
             g.append("text")
                 .attr("x", width / 2)
                 .attr("y", height + 60)
-                // .attr("fill", "#3f3d3d")
                 .style("font-size", "20px")
                 .attr("font-family", "sans-serif")
                 .style("text-anchor", "middle")
@@ -194,14 +264,12 @@
             g.append("g")
                 .call(d3.axisLeft(co2).ticks(10, ",f").tickSize(7).tickPadding(10))
                 .attr("font-family", "sans-serif")
-                .attr("font-size", "14px")
-                .attr("color", "#3f3d3d");
+                .attr("font-size", "14px");
 
             // y-axis title
             g.append("text")
                 .attr("transform", `translate(${-60}, ${height / 2}) rotate(-90)`)
                 .attr("text-anchor", "middle")
-                // .attr("fill", "#3f3d3d")
                 .attr("font-size", "18px")
                 .attr("font-family", "sans-serif")
                 .text("CO₂ per capita")
@@ -209,51 +277,48 @@
 
             // LEGEND
             const legendValues = [1000, 25000, 50000, 75000, 150000];
-            const xCircle = 170;
-            // const xLabel = 430;
-            const yCircle = 80;
             const legendTitle = "GNI pc PPP$";
 
+            // Parameters to control the position of the entire legend
+            const xLegend = 190;
+            const yLegend = 340;
+
+            // Create a container for the entire legend
             const gni_legend = svg.append("g")
-                .attr("transform", `translate(${xCircle}, ${yCircle})`);
+                .attr("transform", `translate(${xLegend}, ${yLegend})`); // Move the whole legend
 
             // Add legend title
             gni_legend.append("text")
-                .attr("x", xCircle - 50)
-                .attr("y", yCircle - 100)
+                .attr("x", -50) // Relative to the group's xLegend
+                .attr("y", -100) // Relative to the group's yLegend
                 .text(legendTitle)
                 .style("font-size", "18px")
                 .attr("font-weight", "bold")
-                .attr("font-stretch", "condensed")
-                .attr("font-family", "sans-serif")
-                .attr("fill", "#3f3d3d");
+                .attr("font-family", "sans-serif");
 
+            // Add circles to the legend
             gni_legend.selectAll("legend-circle")
                 .data(legendValues)
                 .join("circle")
-                .attr("cx", xCircle)
-                .attr("cy", d => yCircle - gni(d))
+                .attr("cx", 0) // Relative to the group's xLegend
+                .attr("cy", d => -gni(d))
                 .attr("r", d => gni(d))
-                .style("fill", "none")
-                .attr("stroke", "#3f3d3d");
+                .style("fill", "none");
 
-            // Add legend: labels
-            svg.selectAll("legend")
+            // Add labels to the legend
+            gni_legend.selectAll("legend-label")
                 .data(legendValues)
                 .join("text")
-                .attr('x', (d, i) => xCircle + 220 + i * 4)
-                .attr('y', (d, i) => yCircle + 80 - i * 17)
+                .attr("x", (d, i) => 50 + i * 4) // Adjust label x position relative to the circles
+                .attr("y", (d, i) => -2 - i * 17) // Align labels with circles
                 .text(d => d)
-                .attr("fill", "#3f3d3d")
-                // .attr("font-size", "13px")
-                .attr("font-family", "sans-serif")
                 .attr('alignment-baseline', 'middle');
 
             // COLOR LEGEND
             const colorLegend = svg.append("g")
-                .attr("transform", `translate(${marginLeft + 200}, ${marginTop + height / 2.4})`);
+                .attr("transform", `translate(${marginLeft + 50}, ${marginTop + height / 7})`);
 
-            const colorScale = d3.scaleSequential(d3.interpolateGreens)
+            const colorScale = d3.scaleSequential(d3.interpolateGnBu)
                 .domain(d3.extent(data, d => d.HALE));
 
             const legendWidth = 250;
@@ -268,8 +333,6 @@
                 .ticks(5)
                 .tickSize(6)
                 .tickFormat((d, i, nodes) => {
-                    // Remove labels for the first and last ticks
-                    // if (i === 0 || i === nodes.length - 1) return null;
                     return d3.format(".0f")(d);
                 });
 
@@ -285,9 +348,6 @@
             axisGroup.selectAll(".tick line")
                 .attr("stroke", "none");
 
-            // // Remove first and last tick lines
-            // axisGroup.selectAll(".tick:first-of-type line, .tick:last-of-type line")
-            //     .remove();
 
             const legendGradient = colorLegend.append("defs")
                 .append("linearGradient")
@@ -333,7 +393,7 @@
                         <table>
                             <tr><td>Country:</td><td><strong>${d.Country}</strong></td></tr>
                             <tr><td>Year:</td><td><strong>${d.Year}</strong></td></tr>
-                            <tr><td>Happy Score:</td><td><strong>${d['Happy Score'].toFixed(2)}</strong></td></tr>
+                            <tr><td>Happiness:</td><td><strong>${d['Happy Score'].toFixed(2)}</strong></td></tr>
                             <tr><td>CO₂ pc:</td><td><strong>${d['CO₂ pc'].toFixed(2)}</strong></td></tr>
                             <tr><td>HALE:</td><td><strong>${d.HALE.toFixed(2)}</strong></td></tr>
                             <tr><td>GNI pc PPP$:</td><td><strong>${d['GNI pc PPP$'].toFixed(0)}</strong></td></tr>
@@ -387,26 +447,24 @@
                     .attr("cy", d => co2(d['CO₂ pc'])); // Update y position
             }
 
-
             // YEAR SELECTION
             const years = [...new Set(data.map(d => d.Year))];
+            const sortedYears = years.slice().sort((a, b) => a - b);
 
-            // Create a container for the buttons above the chart
-            const buttonContainer = canvas.append("div")
+            // Create a container for the buttons on the right of the chart
+            const buttonContainer = container.append("div")
                 .attr("id", "button-container")
                 .style("display", "flex") // Align the buttons in a row
                 .style("flex-direction", "column")
+                .style("margin-left", "0px") // space between chart and buttons
+                .style("margin-top", "40px")
                 .style("align-items", "center")
-                .style("position", "relative") // Position over the chart
-                .style("left", "200px")
-                // .style("justify-content", "end") // Center the buttons
-                .style("bottom", "600px") // Distance from top of the chart
-                // .style("width", "10px") // Full width of the chart container
-                // .style("z-index", "10"); // Make sure it's on top of the chart
+                .style("position", "relative") // Position relative to the chart container
+                .style("z-index", "10");
 
             // Add buttons for each year
             buttonContainer.selectAll("button")
-                .data(years)
+                .data(sortedYears)
                 .enter()
                 .append("button")
                 .text(d => d) // Set button text to the year
@@ -417,8 +475,31 @@
                 });
 
 
-            // Initialize with 2019 data
-            updateChart(2019);
+            // Initialize with 2015 data
+            updateChart(2015);
+
+            // Assuming y is your y-scale and `yValue` is the value where you want the reference line
+            const yValue = 2; // The y value where you want the reference line
+
+            // Add a horizontal reference line
+            g.append("line")
+                .attr("id", "ref-line")
+                .attr("x1", "0%") // Starting x position of the line
+                .attr("x2", "87%") // Ending x position of the line (span full width)
+                .attr("y1", co2(yValue)) // y position for both y1 and y2 (in data coordinates)
+                .attr("y2", co2(yValue)) // Same y position to make the line horizontal
+                // .attr("stroke", "darkolivegreen") // Line color
+                .attr("stroke-width", 3) // Line thickness
+                .attr("stroke-dasharray", "4 4"); // Optional dashed line
+
+            // Add text label above the line
+            g.append("text")
+                .attr("id", "ref-label")
+                .attr("x", 10) // Center text horizontally or adjust as needed
+                .attr("y", co2(yValue) - 10) // Position text slightly above the line
+                .style("font-weight", "bold")
+                .style("font-size", "16px")
+                .text("Sustainable CO2 pc."); // Subscript text; // Text content
 
         }).catch(error => console.error("Error loading the data:", error));
     </script>

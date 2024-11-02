@@ -1,1 +1,4 @@
 *.pyc
+D3/
+scatter_graphs/
+chart_JS/
