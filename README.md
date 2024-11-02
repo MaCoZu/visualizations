@@ -5,7 +5,7 @@ Exploration of the widely used charting libraries. So far matplotlib, seaborn, p
 For example in the notebooks you'll find:
 
 **matplotlib**: 
-- changing the defaults rcParams, styles like `ggplot`
+- changing the defaults rcParams and styles like `ggplot`
 - subplots, secondary axis
 - Scatterplot with trendline
 - Barplots grouped/horizontal, inside lables, confinded axis
@@ -15,10 +15,10 @@ For example in the notebooks you'll find:
 
 **seaborn**
 - styles & context
-- formatting lables
+- formatting labels
 - Relplot: confidence interval, subgraphs
-- changing the lable format in sns
-- fixing axis lables
+- changing the label format in sns
+- fixing axis labels
 - color palettes
 
 
