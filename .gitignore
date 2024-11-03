@@ -1,4 +1,10 @@
 *.pyc
+*.png
+*.csv
+
 D3/
 scatter_graphs/
-chart_JS/
+chartJS/
+
+matplotlib.ipynb
+.gitignore
