@@ -16,10 +16,19 @@ For example in the notebooks you'll find:
 **seaborn**
 - styles & context
 - formatting labels
+- Regplot: Regression lines - higher order, robust 
+- Residplot: checking for normal and iid. residuals
 - Relplot: confidence interval, subgraphs
 - changing the label format in sns
 - fixing axis labels
 - color palettes
+
+**plotly**
+- Interactive Plots, customized hover boxes and legends
+- Toolbar customizations
+- Plotly Express (px) vs. Graph Objects (go)
+- Inspecting the Figure Dictionary
+- Mixed Subplots
 
 
 ## Primary uses for data visualization:
