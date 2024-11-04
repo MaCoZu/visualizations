@@ -2,9 +2,9 @@
 *.png
 *.csv
 
-D3/
 scatter_graphs/
 chartJS/
+model_gallery/
 
 matplotlib.ipynb
 .gitignore
