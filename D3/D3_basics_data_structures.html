@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="./d3.v7.js"></script>
+
+    <title>Document</title>
+</head>
+<body>
+    <div>
+        <svg id="chart" width="700" height="500"></svg>
+    </div>
+    
+
+
+<script>
+
+// ARRAYS 
+const array = [100, 200, 300, 350, 375, 400, 500];
+const colors = ["red", "blue", "brown", "green", "yellow", "pink"];
+
+svg = d3.select("#chart") 
+
+    svg.selectAll("circle")    
+        .data(array)            
+        .enter()                
+        .append("circle")       
+        .attr("r", 10)          
+        .attr("cy", 100)    
+        .attr("cx", d => d)    // data(array) is now d and has an index i
+        .attr("fill", (d, i) => colors[i]);    
+
+
+    // TEXT
+    // Template literals are strings created with backticks. 
+    // They allow the inclusion of JavaScript expressions inside ${} placeholders. 
+    const template = `The square root of 2 is ${Math.sqrt(2)}`;
+    const s = "This is a backslash \\ and this is a double quote \"";
+
+    svg.append("text")
+        .text(template)
+        .attr("fill", "blue")
+        .attr("x", 20)
+        .attr("y", 200)
+
+    svg.append("text")
+        .text(s)
+        .attr("fill", "red")
+        .attr("x", 20)
+        .attr("y", 230)
+    
+
+
+
+</script>
+</body>
+</html>
