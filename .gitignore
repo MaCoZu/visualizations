@@ -5,6 +5,7 @@
 scatter_graphs/
 chartJS/
 model_gallery/
+D3/Basics/
 
 matplotlib.ipynb
 .gitignore
