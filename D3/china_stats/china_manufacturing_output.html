@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js CDN -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        html {
+            display: table;
+            margin: auto;
+        }
+
+        body {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            /* Avoid interfering with mouse events */
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            /* Start fully transparent */
+            transform: translateY(10px);
+            /* Small offset for a "pop-up" effect */
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+            /* Reset the offset */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="chart" class=""></div>
+
+
+    <script>
+        // Parse the year column
+        const yearParser = d3.timeParse("%Y");
+
+        // Convert rows of data
+        const rowConverter = (d) => ({
+            country: d.Country,
+            code: d.Code,
+            year: yearParser(d.Year),
+            mva: parseFloat(d.MVA),
+            worldMva: parseFloat(d.World_MVA),
+            shareOfGlobalMva: parseFloat(d["Share of global MVA"]),
+        });
+
+        // Filter data for selected countries
+        const selectedCountries = ["China", "United States", "Japan", "Germany"];
+
+        // Define custom colors for specific countries
+        const countryColors = {
+            "China": "red",
+            "United States": "navy",
+            "Japan": "purple",
+            "Germany": "goldenrod",
+        };
+
+        // Load and process data
+        d3.csv("./data/manufacturing_share_clean.csv", rowConverter).then((data) => {
+            const dataset = data.filter(
+                (d) => selectedCountries.includes(d.country) && d.gdp !== null
+            );
+
+            if (!dataset || dataset.length === 0) {
+                console.error("Dataset is empty or invalid");
+                return;
+            }
+
+            // Set up margins and dimensions
+            const margins = { top: 80, right: 50, bottom: 60, left: 70 };
+            const width = 800 - margins.left - margins.right;
+            const height = 500 - margins.top - margins.bottom;
+
+            // Create canvas
+            const canvas = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margins.left + margins.right)
+                .attr("height", height + margins.top + margins.bottom)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            canvas.append("rect")
+                .attr("width", width + margins.left + margins.right)
+                .attr("height", height + margins.top + margins.bottom)
+                .style("fill", "whitesmoke");
+
+            // TITLE
+            canvas.append("text")
+                .attr("x", (width / 2) + 50)
+                .attr("y", (margins.top / 2))
+                .attr("text-anchor", "middle")
+                .style("font-size", "24px")
+                .text("Share of Global Manufacturing Output");
+
+            // Add chart area
+            const chartArea = canvas.append("g")
+                .attr("transform", `translate(${margins.left},${margins.top})`);
+
+            // Set up scales
+            const xScale = d3.scaleTime()
+                .domain(d3.extent(dataset, (d) => d.year))
+                .nice()
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(dataset, (d) => d.shareOfGlobalMva))
+                .nice()
+                .range([height, 0]);
+
+            // Add axes
+            chartArea.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).ticks(d3.timeYear.every(8))
+                    .tickPadding(15).tickSize(6));
+
+            chartArea.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale).ticks(6, ".1f").tickPadding(10).tickSize(6));
+
+            // Group the data by country
+            const groupedData = d3.group(dataset, (d) => d.country);
+
+            // Create a line generator
+            const line = d3.line()
+                .x((d) => xScale(d.year))
+                .y((d) => yScale(d.shareOfGlobalMva));
+
+            // Add a line for each selected country
+            groupedData.forEach((values, key) => {
+                chartArea.append("path")
+                    .datum(values)
+                    .attr("fill", "none")
+                    .attr("stroke", countryColors[key])
+                    .attr("stroke-width", 2.5)
+                    .attr("d", line);
+            });
+
+            const numPerRow = Math.ceil(selectedCountries.length / 2); // Divide countries into 2 rows
+            const rowHeight = 25; // Space between rows
+            const colWidth = 140; // Space between columns
+
+            // Add legend
+            const legend = canvas.append("g")
+                .attr("transform", `translate(${margins.right + 50},${margins.top + 20})`);
+
+            selectedCountries.forEach((country, i) => {
+                const row = Math.floor(i / numPerRow); // Determine the row number (0 or 1)
+                const col = i % numPerRow; // Determine the column number
+
+                const legendEntry = legend.append("g")
+                    .attr("transform", `translate(${row * colWidth}, ${col * rowHeight})`);
+
+                // Add color circle
+                legendEntry.append("circle")
+                    .attr("r", 7)
+                    .attr("fill", countryColors[country]);
+
+                // Add country label
+                legendEntry.append("text")
+                    .attr("x", 20) // Position text next to circle
+                    .attr("y", 5) // Center vertically with circle
+                    .attr("font-size", "15px")
+                    .attr("fill", "black")
+                    .text(country)
+                    .style("alignment-baseline", "middle");
+
+                // Add tooltip div
+                const tooltip = d3.select("body")
+                    .append("div")
+                    .style("position", "absolute")
+                    .style("background", "rgba(255, 255, 255, 0.95)")
+                    .style("border", "1px solid #ccc")
+                    .style("padding", "5px")
+                    .style("display", "none");
+
+                // Add circles and tooltip interaction
+                chartArea.selectAll(".dot")
+                    .data(dataset)
+                    .enter()
+                    .append("circle")
+                    .attr("cx", (d) => xScale(d.year))
+                    .attr("cy", (d) => yScale(d.shareOfGlobalMva))
+                    .attr("r", 10)
+                    .attr("opacity", "0.0")
+                    .attr("fill", (d) => countryColors[d.country])
+                    .on("mouseover", (event, d) => {
+                        tooltip.style("display", "block") // Ensure tooltip is visible
+                            .style("opacity", 0) // Start from transparent
+                            .html(`
+            <strong>${d.country}</strong><br>
+            Year: ${d.year.getFullYear()}<br>
+            ${d3.format(",.0f")(100 * (d.shareOfGlobalMva.toFixed(2)))} % of GMO`)
+                            .style("left", `${event.pageX + 10}px`)
+                            .style("top", `${event.pageY - 10}px`)
+                            .transition()
+                            .duration(200) // Fade-in duration
+                            .style("opacity", 1); // Fully visible
+                    })
+                    .on("mouseout", () => {
+                        tooltip.transition()
+                            .duration(200) // Fade-out duration
+                            .style("opacity", 0) // Fade out to transparent
+                            .on("end", () => tooltip.style("display", "none")); // Hide after fading out
+                    });
+
+            });
+        }).catch((error) => {
+            console.error("Error loading or processing the data:", error);
+        });
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>

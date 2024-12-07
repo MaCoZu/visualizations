@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Load d3.js -->
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <!-- Tailwinds  -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+
+    </style>
+
+    <title>Bouncing Circles</title>
+</head>
+
+<body>
+
+    <!-- Chart -->
+    <div id="chart"
+        class="md:col-start-1 md:row-start-6 md:col-span-6 md:row-span-6 relative rounded-md overflow-hidden items-center justify-center h-full">
+        <button id="refreshButton"
+            class="absolute bottom-10 left-96 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-md"
+            onClick="update();">
+            Again
+        </button>
+        <svg id="chart" class="w-full h-full"></svg>
+    </div>
+
+    <script>
+        function update() {
+            var width = 1000, height = 400
+            const svg = d3.select("#chart")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+            color = d3.scaleSequential().domain([1, 15])
+                .interpolator(d3.interpolateViridis);
+
+            // Remove existing circles to reset them
+            svg.selectAll("circle").remove();
+
+            svg.selectAll("circle")
+                .data(data)
+                .join("circle")
+                .attr("cy", 250)
+                .attr("r", 25)
+                .attr("fill", "red")
+                .transition()
+                .ease(d3.easeBack)
+                .duration(2000)
+                .attr("cx", function (d, i) { return 30 + i * 60 })
+                .transition()
+                .duration(1050)
+                .ease(d3.easeBounceOut)
+                .attr('r', d => 8 * d)
+                .attr("fill", function (d) { return color(d) })
+                .attr("stroke", function (d) { return color(15 - d) })
+                .attr("stroke-width", 5)
+                .attr("fill-opacity", 0.8)
+                .attr("stroke-opacity", 0.7)
+        }
+
+        update();
+
+    </script>
+</body>

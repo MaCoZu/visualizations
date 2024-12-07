@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js CDN -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        html {
+            display: table;
+            margin: auto;
+        }
+
+        body {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            /* Avoid interfering with mouse events */
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            /* Start fully transparent */
+            transform: translateY(10px);
+            /* Small offset for a "pop-up" effect */
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+            /* Reset the offset */
+        }
+
+        .text {
+            font-size: 10px;
+            font-family: 'Literata', sans-serif;
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="chart" class=""></div>
+
+
+    <script>
+        d3.csv("./data/merch_share.csv").then(data => {
+            // Parse the data
+            data.forEach(d => {
+                d.Ex2000 = +d['% of global merch exports 2000']; // Convert to number
+                d.Ex2023 = +d['% of global merch exports 2023']; // Convert to number
+            });
+
+            // Sort the data by Ex2023 in descending order
+            data.sort((a, b) => b.Ex2023 - a.Ex2023);
+
+            // Prepare groups (countries) and subgroups (years)
+            const groups = data.map(d => d.Country);
+            const subgroups = ["Ex2000", "Ex2023"];
+
+            // Set the dimensions and margins of the graph
+            var margin = { top: 20, right: 20, bottom: 60, left: 150 },
+                width = 500 - margin.left - margin.right,
+                height = 650 - margin.top - margin.bottom;
+
+            // Append the SVG object to the body of the page
+            var svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+
+            svg.append("text")
+                .attr("x", width / 2)  // Centers horizontally
+                .attr("y", 0) // Position from the top
+                .attr("text-anchor", "middle") // Centers the text
+                .style("font-size", "20px") // Font size
+                .text("Share of Merchandise Exports");
+
+            // X axis
+            var x = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.Ex2023)])
+                .range([0, width]);
+
+            svg.append("g")
+                .attr("transform", `translate(0, ${height})`)
+                .call(d3.axisBottom(x)
+                    .tickFormat(d => `${(d * 100).toFixed(0)}%`) // Format as percentages
+                    .ticks(4)
+                    .tickSize(6)
+                    .tickPadding(15)
+                    .tickSizeOuter(0));
+
+            // Y axis: Countries
+            const y = d3.scaleBand()
+                .domain(groups)
+                .range([0, height])
+                .padding(0.2);
+
+            svg.append("g")
+                .call(d3.axisLeft(y).tickSize(0)
+                    .tickPadding(15).tickSizeOuter(4));
+
+            // Scale for subgroup position
+            var ySubgroup = d3.scaleBand()
+                .domain(subgroups.reverse()) // Reverse order so Ex2023 is on top
+                .range([0, y.bandwidth()])
+                .padding(0.2);
+
+
+            // Tooltip
+            const tooltip = d3.select("body")
+                .append("div")
+                .style("position", "absolute")
+                .style("background", "#fff")
+                .style("border", "1px solid #ccc")
+                .style("padding", "10px")
+                .style("border-radius", "4px")
+                .style("display", "none")
+                .style("pointer-events", "none");
+
+            // Show the bars for Ex2023
+            svg.selectAll("rect.Ex2023")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("class", "Ex2023")
+                .attr("x", x(0))
+                .attr("y", d => y(d.Country))
+                .attr("width", d => x(d.Ex2023))
+                .attr("height", y.bandwidth() / 2.2)
+                // .attr("fill", d => countryColors[d.Country])
+                .attr("fill", "navy")
+                .on("mouseover", (event, d) => {
+                    tooltip.style("display", "block")
+                        .html(`<strong>${d.Country}</strong><br>2023: ${(d.Ex2023 * 100).toFixed(2)}%`);
+                })
+                .on("mousemove", event => {
+                    tooltip.style("top", `${event.pageY + 5}px`)
+                        .style("left", `${event.pageX + 5}px`);
+                })
+                .on("mouseout", () => tooltip.style("display", "none"));
+
+            // Show the bars for Ex2000 (dimmed)
+            svg.selectAll("rect.Ex2000")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("class", "Ex2000")
+                .attr("x", x(0))
+                .attr("y", d => y(d.Country) + y.bandwidth() / 2)
+                .attr("width", d => x(d.Ex2000))
+                .attr("height", y.bandwidth() / 2.2)
+                // .attr("fill", d => countryColors[d.Country])
+                .attr("fill", "gray")
+                .style("opacity", 0.5)
+                .on("mouseover", (event, d) => {
+                    tooltip.style("display", "block")
+                        .html(`<strong>${d.Country}</strong><br>2000: ${(d.Ex2000 * 100).toFixed(2)}%`);
+                })
+                .on("mousemove", event => {
+                    tooltip.style("top", `${event.pageY + 5}px`)
+                        .style("left", `${event.pageX + 5}px`);
+                })
+                .on("mouseout", () => tooltip.style("display", "none"));
+
+            // Add a legend group
+            const legend = svg.append("g")
+                .attr("transform", `translate(${width - 100}, ${height - 100})`);
+
+            // Define the years and their colors
+            const years = [
+                { year: "2000", color: "gray" },
+                { year: "2023", color: "navy" }
+            ];
+
+            // Iterate over the years to create legend entries
+            years.forEach((entry, i) => {
+                const legendEntry = legend.append("g")
+                    .attr("transform", `translate(0, ${i * 25})`);
+
+                // Add the circle
+                legendEntry.append("circle")
+                    .attr("cx", 0) // X position
+                    .attr("cy", 0) // Y position
+                    .attr("r", 8) // Radius of the circle
+                    .attr("fill", entry.color);
+
+                // Add the text
+                legendEntry.append("text")
+                    .attr("x", 15) // Offset to the right of the circle
+                    .attr("y", 4) // Vertically aligned with the circle
+                    .text(entry.year)
+                    .style("font-size", "16px")
+                    .style("fill", "black")
+                    .style("font-family", "sans-serif");
+            });
+
+
+
+
+
+        });
+
+
+
+
+    </script>
+</body>
+
+</html>

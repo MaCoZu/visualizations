@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js CDN -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        html {
+            display: table;
+            margin: auto;
+        }
+
+        body {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            /* Avoid interfering with mouse events */
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            /* Start fully transparent */
+            transform: translateY(10px);
+            /* Small offset for a "pop-up" effect */
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+            /* Reset the offset */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="chart" class=""></div>
+
+
+    <script>
+        const yearParser = d3.timeParse("%Y");
+
+        // Row converter function
+        const rowConverter = (d) => {
+            const pop = parseFloat(d["Population, total"]);
+            return {
+                country: d.Country ? d.Country.trim() : null, // Ensure country is properly handled
+                year: yearParser(d.Year), // Parse year
+                pop: isNaN(pop) ? null : pop, // Handle invalid population values
+            };
+        };
+
+        // Define selected countries and their colors
+        const selectedCountries = ["India", "China", "European Union", "United States", "Russian Federation"];
+        const countryColors = {
+            "China": "red",
+            "India": "green",
+            "European Union": "purple",
+            "United States": "navy",
+            "Russian Federation": "goldenrod",
+        };
+
+
+
+
+
+        // Load and process data
+        d3.csv("./data/population_clean.csv", rowConverter)
+            .then((data) => {
+                if (!data || data.length === 0) {
+                    console.error("Dataset is empty or invalid");
+                    return;
+                }
+
+                // Filter the data for selected countries and valid population
+                const dataset = data
+                    .filter(
+                        (d) =>
+                            d.country &&
+                            selectedCountries.includes(d.country) &&
+                            d.pop !== null &&
+                            d.year.getFullYear() === 2023 // Filter for the year 2023
+                    );
+
+                // Set up margins and dimensions
+                const margins = { top: 60, right: 10, bottom: 60, left: 100 };
+                const width = 500 - margins.left - margins.right;
+                const height = 350 - margins.top - margins.bottom;
+
+                // Create canvas
+                const canvas = d3.select("#chart")
+                    .append("svg")
+                    .attr("width", width + margins.left + margins.right)
+                    .attr("height", height + margins.top + margins.bottom)
+                    .attr("preserveAspectRatio", "xMidYMid meet");
+
+                canvas.append("rect")
+                    .attr("width", width + margins.left + margins.right)
+                    .attr("height", height + margins.top + margins.bottom)
+                    .style("fill", "whitesmoke");
+
+                // Add chart area
+                const chartArea = canvas.append("g")
+                    .attr("transform", `translate(${margins.left},${margins.top})`)
+                    .attr("width", width)
+                    .attr("height", height);
+
+                // TITLE
+                chartArea.append("text")
+                    .attr("x", (width / 2))
+                    .attr("y", (margins.top / 2))
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "24px")
+                    .text("Population");
+
+                // Add X axis
+                var x = d3.scaleLinear()
+                    .domain([0, d3.max(dataset, d => d.pop)])
+                    .range([0, width]);
+
+                chartArea.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x).ticks(4)
+                        .tickFormat((d) => `${d / 1000000000}`)
+                        .tickPadding(10)
+                        .tickSize(6))
+                    .selectAll("text")
+
+                // Y axis
+                var y = d3.scaleBand()
+                    .domain(selectedCountries) // Use selectedCountries for order
+                    .range([0, height])
+                    .padding(0.1);
+
+                chartArea.append("g")
+                    .call(d3.axisLeft(y)
+                        .tickSize(0)
+                        .tickPadding(10))
+                    .selectAll(".tick text")
+                    .call((text) =>
+                        text.each(function () {
+                            const self = d3.select(this);
+                            const words = self.text().split(" ");
+                            self.text(""); // Clear existing text
+
+                            if (words.length === 1) {
+                                // For single-line labels, add the text without additional adjustments
+                                self.append("tspan")
+                                    .text(words[0])
+                                    .attr("x", -7) // Offset from axis
+                                    .attr("dy", "0.35em"); // Vertically centered
+                            } else {
+                                // For multi-line labels, adjust the first line upwards
+                                words.forEach((word, i) => {
+                                    self.append("tspan")
+                                        .text(word)
+                                        .attr("x", -7) // Offset from axis
+                                        .attr("dy", i === 0 ? `-${(words.length - 1) * 0.3}em` : "1.7em"); // Offset lines
+                                });
+                            }
+                        })
+                    );
+
+                //Bars
+                chartArea.selectAll("rect")
+                    .data(dataset)
+                    .enter()
+                    .append("rect")
+                    .attr("x", 1)
+                    .attr("y", d => y(d.country))
+                    .attr("width", d => x(d.pop))
+                    .attr("height", y.bandwidth())
+                    .attr("fill", d => countryColors[d.country])
+
+                // Add text inside bars for population in billions
+                chartArea.selectAll("barText")
+                    .data(dataset)
+                    .enter()
+                    .append("text")
+                    .attr("x", d => x(d.pop) - 5) // Position near the end of the bar
+                    .attr("y", d => y(d.country) + y.bandwidth() / 2) // Center vertically
+                    .attr("dy", ".35em") // Adjust vertical alignment
+                    .attr("text-anchor", "end") // Align text to the right
+                    .style("fill", "white")
+                    .style("font-weight", "bold")
+                    .text((d) => (d.pop / 1e9).toFixed(2)); // Format population in billions
+
+            }).catch((error) => {
+                console.error("Error loading or processing the data:", error);
+            });
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>

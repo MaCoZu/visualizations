@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js CDN -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        html {
+            display: table;
+            margin: auto;
+        }
+
+        body {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            /* Avoid interfering with mouse events */
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            /* Start fully transparent */
+            transform: translateY(10px);
+            /* Small offset for a "pop-up" effect */
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+            /* Reset the offset */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="chart" class=""></div>
+
+
+    <script>
+        // Parse the year column
+        const yearParser = d3.timeParse("%Y");
+
+        // Convert rows of data
+        const rowConverter = (d) => {
+            const gdp_growth = parseFloat(d["GDP growth"]);
+            return {
+                country: d.Country,
+                year: yearParser(d.Year),
+                gdp_growth: isNaN(gdp_growth) ? null : gdp_growth, // Filter invalid GDP values
+            };
+        };
+
+        // Filter data for selected countries
+        const selectedCountries = ["China", 'United States'];
+
+        // Define custom colors for specific countries
+        const countryColors = {
+            "China": "red",
+            "United States": "navy",
+            "Japan": "purple",
+            "Germany": "goldenrod",
+        };
+
+        d3.csv("./data/gdp_growth_clean.csv", rowConverter).then((data) => {
+            const dataset = data.filter(
+                (d) => selectedCountries.includes(d.country) && d.gdp_growth !== null
+            );
+
+            if (!dataset || dataset.length === 0) {
+                console.error("Dataset is empty or invalid");
+                return;
+            }
+
+            // Set up margins and dimensions
+            const margins = { top: 80, right: 50, bottom: 60, left: 70 };
+            const width = 800 - margins.left - margins.right;
+            const height = 500 - margins.top - margins.bottom;
+
+            // Create canvas
+            const canvas = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margins.left + margins.right)
+                .attr("height", height + margins.top + margins.bottom)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            canvas.append("rect")
+                .attr("width", width + margins.left + margins.right)
+                .attr("height", height + margins.top + margins.bottom)
+                .style("fill", "whitesmoke");
+
+            // Add chart area
+            const chartArea = canvas.append("g")
+                .attr("transform", `translate(${margins.left},${margins.top})`);
+
+            // TITLE
+            canvas.append("text")
+                .attr("x", (width / 2) + 50)
+                .attr("y", (margins.top / 2))
+                .attr("text-anchor", "middle")
+                .style("font-size", "24px")
+                .text("GDP growth (annual %)");
+
+            // Set up scales
+            const xScale = d3.scaleTime()
+                .domain(d3.extent(dataset, (d) => d.year))
+                .nice()
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(dataset, (d) => d.gdp_growth))
+                .nice()
+                .range([height, 0]);
+
+            // Add axes
+            chartArea.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).ticks(d3.timeYear.every(5))
+                    .tickPadding(15).tickSize(6));
+
+            chartArea.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale)
+                    .ticks(5) // Specify the number of ticks
+                    .tickFormat((d) => `${d3.format(",.0f")(d)}%`) // Divide by 1000 and append 'k'
+                    .tickPadding(10)
+                    .tickSize(6));
+
+            // Group the data by country
+            const groupedData = d3.group(dataset, (d) => d.country);
+
+            // Create a line generator
+            const line = d3.line()
+                .x((d) => xScale(d.year))
+                .y((d) => yScale(d.gdp_growth));
+
+            // Add a line for each selected country
+            groupedData.forEach((values, key) => {
+                if (values && values.length > 0) {
+                    chartArea.append("path")
+                        .datum(values)
+                        .attr("fill", "none")
+                        .attr("stroke", countryColors[key])
+                        .attr("stroke-width", 2.5)
+                        .attr("d", line);
+                }
+            });
+
+            // Add a legend group
+            const legend = canvas.append("g")
+                .attr("transform", `translate(${width - width / 6}, ${height})`);
+
+
+            selectedCountries.forEach((country, i) => {
+                const legendEntry = legend.append("g")
+                    .attr("transform", `translate(0,${i * 25})`);
+
+                // Add color box
+                legendEntry.append("circle")
+                    .attr("r", 7)
+                    .attr("fill", countryColors[country]);
+
+                // Add country label
+                legendEntry.append("text")
+                    .attr("x", 20)
+                    .attr("y", 5)
+                    .attr("font-size", "15px")
+                    .attr("fill", "black")
+                    .text(country)
+                    // .attr("text-anchor", "left")
+                    .style("alignment-baseline", "middle");
+            });
+
+            // Add tooltip div
+            const tooltip = d3.select("body")
+                .append("div")
+                .style("position", "absolute")
+                .style("background", "rgba(255, 255, 255, 0.95)")
+                .style("border", "1px solid #ccc")
+                .style("padding", "5px")
+                .style("display", "none");
+
+            // Add circles and tooltip interaction
+            chartArea.selectAll(".dot")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", (d) => xScale(d.year))
+                .attr("cy", (d) => yScale(d.gdp_growth))
+                .attr("r", 10)
+                .attr("opacity", "0.0")
+                .attr("fill", (d) => countryColors[d.country])
+                .on("mouseover", (event, d) => {
+                    tooltip.style("display", "block") // Ensure tooltip is visible
+                        .style("opacity", 0) // Start from transparent
+                        .html(`
+            <strong>${d.country}</strong><br>
+            Year: ${d.year.getFullYear()}<br>
+            GDP growth: ${d3.format(",.2f")(d.gdp_growth.toFixed(2)) + '%'}
+        `)
+                        .style("left", `${event.pageX + 10}px`)
+                        .style("top", `${event.pageY - 10}px`)
+                        .transition()
+                        .duration(200) // Fade-in duration
+                        .style("opacity", 1); // Fully visible
+                })
+                .on("mouseout", () => {
+                    tooltip.transition()
+                        .duration(200) // Fade-out duration
+                        .style("opacity", 0) // Fade out to transparent
+                        .on("end", () => tooltip.style("display", "none")); // Hide after fading out
+                });
+
+
+        }).catch((error) => {
+            console.error("Error loading or processing the data:", error);
+        });
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>
